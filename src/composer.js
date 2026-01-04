@@ -1,141 +1,139 @@
-﻿/* src/composer.js */
-(function(){
-  "use strict";
+﻿import { APP } from "./config.js";
 
-  // US Letter: 8.5in x 11in
-  const LETTER_W_IN = 8.5;
-  const LETTER_H_IN = 11;
+/**
+ * Deterministic US Letter compositor (max 10 pages).
+ * - Uses CSS inches for print fidelity; uses 96dpi conversion for text layout.
+ * - Word wrap via Canvas measureText for consistent line breaks.
+ */
 
-  function pxPerIn(){
-    // En browsers modernos suele aproximar a 96px/in, pero usamos una medición real:
-    const div = document.createElement("div");
-    div.style.width = "1in";
-    div.style.position = "absolute";
-    div.style.left = "-10000px";
-    div.style.top = "-10000px";
-    document.body.appendChild(div);
-    const px = div.getBoundingClientRect().width || 96;
-    div.remove();
-    return px;
-  }
+const DPI = 96;
+const LETTER = { wIn: 8.5, hIn: 11 };
 
-  function buildFeatureSettings(features){
-    // font-feature-settings: 'liga' 1, 'calt' 1, ...
-    const onOff = (tag, enabled) => `'${tag}' ${enabled ? 1 : 0}`;
-    const items = [];
-    items.push(onOff("liga", !!features.liga));
-    items.push(onOff("calt", !!features.calt));
-    items.push(onOff("kern", !!features.kern));
-    items.push(onOff("dlig", !!features.dlig));
-    items.push(onOff("hlig", !!features.hlig));
-    items.push(onOff("salt", !!features.salt));
-    if (features.ss && typeof features.ss === "string" && features.ss.trim()){
-      items.push(onOff(features.ss.trim(), true));
+function inchesToPx(inches) {
+  return Math.round(inches * DPI);
+}
+
+function normalizeText(text) {
+  return (text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+function createMeasureCtx(fontFamily, fontSizePx) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { alpha: false });
+  ctx.font = `${fontSizePx}px ${fontFamily}`;
+  return ctx;
+}
+
+function wrapLine(ctx, line, maxWidthPx) {
+  // Preserve explicit blank lines
+  if (!line) return [""];
+
+  const words = line.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [""];
+
+  const lines = [];
+  let current = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const candidate = `${current} ${words[i]}`;
+    if (ctx.measureText(candidate).width <= maxWidthPx) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = words[i];
     }
-    return items.join(", ");
+  }
+  lines.push(current);
+  return lines;
+}
+
+export function composeUSLetterPages({
+  text,
+  fontFamily,
+  fontSizePx,
+  lineHeightMultiplier,
+  marginsIn,
+  maxPages = APP.maxPages,
+}) {
+  const t = normalizeText(text);
+
+  const m = marginsIn || APP.defaultMarginsIn;
+  const contentWpx = inchesToPx(LETTER.wIn - (m.left + m.right));
+  const contentHpx = inchesToPx(LETTER.hIn - (m.top + m.bottom));
+
+  const lhPx = Math.max(12, Math.round(fontSizePx * (lineHeightMultiplier || APP.defaultLineHeight)));
+  const linesPerPage = Math.max(1, Math.floor(contentHpx / lhPx));
+
+  const ctx = createMeasureCtx(fontFamily, fontSizePx);
+
+  const rawLines = t.split("\n");
+  const wrapped = [];
+  for (const rl of rawLines) {
+    const wl = wrapLine(ctx, rl, contentWpx);
+    for (const w of wl) wrapped.push(w);
   }
 
-  function createMeasurer(){
-    const m = document.createElement("div");
-    m.style.position = "absolute";
-    m.style.left = "-10000px";
-    m.style.top = "-10000px";
-    m.style.whiteSpace = "pre-wrap";
-    m.style.wordBreak = "break-word";
-    m.style.visibility = "hidden";
-    document.body.appendChild(m);
-    return m;
+  const pages = [];
+  let idx = 0;
+
+  while (idx < wrapped.length && pages.length < maxPages) {
+    pages.push(wrapped.slice(idx, idx + linesPerPage));
+    idx += linesPerPage;
   }
 
-  function paginateText(text, settings remind){
-    // This file must remain valid JS; no TS.
+  const overflow = idx < wrapped.length;
+  if (overflow && pages.length > 0) {
+    const last = pages[pages.length - 1];
+    if (last.length > 0) {
+      last[last.length - 1] = (last[last.length - 1] || "").replace(/\s*$/, "") + " …";
+    }
   }
 
-  function composePages({
-    text,
-    fontFamily,
-    fontSizePt,
-    lineHeight,
-    marginIn,
-    maxPages,
-    features
-  }){
-    const ppi = pxPerIn();
-    const pageW = LETTER_W_IN * ppi;
-    const pageH = LETTER_H_IN * ppi;
-    const pad = Math.max(0.3, Math.min(1.5, marginIn)) * ppi;
+  return {
+    pages,
+    overflow,
+    metrics: { contentWpx, contentHpx, linesPerPage, lhPx, fontSizePx },
+    paper: { ...LETTER, marginsIn: m },
+  };
+}
 
-    const contentW = pageW - pad*2;
-    const contentH = pageH - pad*2;
+export function renderUSLetterPages(container, model, { fontFamily, fontSizePx, lineHeightPx, marginsIn }) {
+  if (!container) return;
+  container.innerHTML = "";
 
-    const measurer = createMeasurer();
-    measurer.style.width = contentW + "px";
-    measurer.style.fontFamily = fontFamily;
-    measurer.style.fontSize = fontSizePt + "pt";
-    measurer.style.lineHeight = String(lineHeight);
-    measurer.style.fontFeatureSettings = buildFeatureSettings(features);
+  const m = marginsIn || APP.defaultMarginsIn;
 
-    const pages = [];
-    const normalized = (text || "").replace(/\r\n/g, "\n");
+  const root = document.createElement("div");
+  root.className = "gm-pages";
 
-    // Estrategia: iterar por líneas (preserva saltos) y llenar hasta altura máxima.
-    const lines = normalized.split("\n");
-    let current = "";
-    let i = 0;
+  model.pages.forEach((lines, i) => {
+    const page = document.createElement("section");
+    page.className = "gm-page";
+    page.setAttribute("role", "article");
+    page.setAttribute("aria-label", `Page ${i + 1}`);
 
-    while (i < lines.length && pages.length < maxPages){
-      const nextLine = lines[i];
-      const candidate = (current.length ? (current + "\n" + nextLine) : nextLine);
+    const content = document.createElement("div");
+    content.className = "gm-page-content";
+    content.style.padding = `${m.top}in ${m.right}in ${m.bottom}in ${m.left}in`;
+    content.style.fontFamily = fontFamily;
+    content.style.fontSize = `${fontSizePx}px`;
+    content.style.lineHeight = `${lineHeightPx}px`;
 
-      measurer.textContent = candidate;
-      const h = measurer.getBoundingClientRect().height;
-
-      if (h <= contentH){
-        current = candidate;
-        i++;
-        continue;
-      }
-
-      // Si ni siquiera entra una sola línea (caso extremo: fuente muy grande)
-      if (!current.length){
-        // Fuerza corte duro por caracteres
-        let chunk = "";
-        for (const ch of nextLine){
-          const cand2 = chunk + ch;
-          measurer.textContent = cand2;
-          if (measurer.getBoundingClientRect().height <= contentH){
-            chunk = cand2;
-          } else {
-            break;
-          }
-        }
-        pages.push(chunk);
-        // Resto de la línea queda para siguientes páginas
-        lines[i] = nextLine.slice(chunk.length);
-        current = "";
-        continue;
-      }
-
-      pages.push(current);
-      current = "";
+    for (const ln of lines) {
+      const p = document.createElement("div");
+      p.className = "gm-line";
+      p.textContent = ln;
+      content.appendChild(p);
     }
 
-    if (pages.length < maxPages && current.length){
-      pages.push(current);
-    }
+    const footer = document.createElement("div");
+    footer.className = "gm-page-footer";
+    footer.textContent = `${i + 1} / ${model.pages.length}`;
 
-    // Si se cortó por maxPages, adjunta aviso (sin “payasadas”, solo rigor)
-    const truncated = i < lines.length;
-    measurer.remove();
+    page.appendChild(content);
+    page.appendChild(footer);
+    root.appendChild(page);
+  });
 
-    return {
-      pages,
-      truncated,
-      pageCss: {
-        padPx: pad
-      }
-    };
-  }
-
-  window.GlyphComposer = { composePages, buildFeatureSettings };
-})();
+  container.appendChild(root);
+}

@@ -1,30 +1,39 @@
 ﻿/**
- * Ajusta aquí los endpoints de tu backend.
- * No hay API keys hardcodeadas. El input apiKey es opcional y se envía solo si el usuario lo escribe.
+ * GlyphMaster Frontend - Runtime/Build Configuration
+ * - No secrets in frontend.
+ * - Backend base URL configurable at runtime via window.__GLYPHMASTER__.
  */
-window.GLYPHMASTER_CONFIG = {
-  API_BASE: "",
 
-  // 1) Crear job de generación de fuente
-  // POST {API_BASE}/api/font/jobs
-  // FormData:
-  // - images[] (files)
-  // - language (string)
-  // - options (json string)
-  // - apiKey (optional string)
-  ENDPOINT_CREATE_JOB: "/api/font/jobs",
+export const APP = {
+  name: "GlyphMaster Studio",
+  maxPages: 10,
+  recommendedSamples: { min: 2, max: 6 },
+  // UI rendering knobs
+  defaultFontSizePx: 20,
+  defaultLineHeight: 1.55, // multiplier
+  defaultMarginsIn: { top: 0.8, right: 0.8, bottom: 0.8, left: 0.8 },
+};
 
-  // 2) Consultar estado del job
-  // GET {API_BASE}/api/font/jobs/{jobId}
-  // Response: { status: "queued"|"running"|"done"|"error", progress: 0..100, message, result?: {...} }
-  ENDPOINT_JOB_STATUS: "/api/font/jobs/{jobId}",
+function readRuntimeConfig() {
+  // Optional runtime override (e.g., set in index.html):
+  // window.__GLYPHMASTER__ = { apiBaseUrl: "https://your-backend.example", endpoints: {...} }
+  const rt = (typeof window !== "undefined" && window.__GLYPHMASTER__) ? window.__GLYPHMASTER__ : {};
+  return rt && typeof rt === "object" ? rt : {};
+}
 
-  // 3) Descargar fuente generada
-  // GET {API_BASE}/api/font/jobs/{jobId}/font
-  // Response: binary font file (woff2/otf/ttf). Content-Type: font/woff2 etc.
-  ENDPOINT_JOB_FONT: "/api/font/jobs/{jobId}/font",
+const RUNTIME = readRuntimeConfig();
 
-  // Timeout/red y polling
-  POLL_INTERVAL_MS: 1100,
-  REQUEST_TIMEOUT_MS: 60000
+export const API = {
+  baseUrl: (RUNTIME.apiBaseUrl ?? "").replace(/\/+$/, ""), // no trailing slash
+  timeoutMs: Number.isFinite(RUNTIME.timeoutMs) ? RUNTIME.timeoutMs : 45_000,
+  pollIntervalMs: Number.isFinite(RUNTIME.pollIntervalMs) ? RUNTIME.pollIntervalMs : 900,
+  pollMaxMs: Number.isFinite(RUNTIME.pollMaxMs) ? RUNTIME.pollMaxMs : 180_000,
+
+  endpoints: {
+    health: "/api/health",
+    build: "/api/font/build",
+    job: (jobId) => `/api/font/jobs/${encodeURIComponent(jobId)}`,
+    download: (jobId) => `/api/font/jobs/${encodeURIComponent(jobId)}/download`,
+    ...(RUNTIME.endpoints ?? {}),
+  },
 };

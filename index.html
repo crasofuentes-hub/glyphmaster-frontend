@@ -1,253 +1,115 @@
 ﻿<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>InkReplica Studio — Handwriting-to-Font Composer</title>
-  <meta name="description" content="Upload handwriting samples, generate a personal font via backend, and compose typed documents in US Letter pages (max 10) with OpenType features." />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GlyphMaster Studio</title>
   <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>
-  <a class="skip-link" href="#main">Saltar al contenido</a>
+  <!-- Optional runtime config (safe): set backend base URL without rebuilding -->
+  <script>
+    // Example:
+    // window.__GLYPHMASTER__ = { apiBaseUrl: "https://your-backend.example" };
+    window.__GLYPHMASTER__ = window.__GLYPHMASTER__ || {};
+  </script>
 
-  <header class="topbar" role="banner">
-    <div class="topbar__inner">
-      <div class="brand" aria-label="InkReplica Studio">
-        <div class="brand__mark" aria-hidden="true"></div>
-        <div class="brand__text">
-          <div class="brand__title">InkReplica Studio</div>
-          <div class="brand__subtitle">Handwriting-to-Font Composer (US Letter, máx. 10 páginas)</div>
-        </div>
+  <main class="gm-wrap">
+    <header class="gm-topbar">
+      <div class="gm-title">
+        <h1>GlyphMaster Studio</h1>
+        <p>
+          Upload handwriting samples, build a personalized font via your backend (GSUB/GPOS, calt/liga/kern),
+          and compose typed text into <strong>US Letter</strong> pages (max <strong>10</strong>) for print-ready output.
+        </p>
       </div>
+      <div id="apiBadge" class="gm-badge" aria-label="API status">API: Checking…</div>
+    </header>
 
-      <div class="topbar__right">
-        <div class="pill" id="pillFontStatus" aria-live="polite" aria-atomic="true">
-          Fuente: <span class="pill__value" id="fontStatusText">No cargada</span>
-        </div>
-        <button class="btn btn--ghost" id="btnPrint" type="button" title="Imprimir / Guardar como PDF" aria-label="Imprimir o guardar como PDF">
-          Imprimir / PDF
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <main id="main" class="layout" role="main">
-    <section class="panel" aria-label="Configuración y carga de muestras">
-      <h1 class="h1">Clonar caligrafía → Fuente tipográfica → Documento Carta</h1>
-      <p class="muted">
-        Sube tus muestras de escritura. Tu backend generará una fuente con GSUB/GPOS (alternativas contextuales, ligaduras y kerning). Este frontend la carga y compone el documento en páginas tamaño carta.
-      </p>
-
-      <div class="grid-2">
-        <div class="card">
-          <h2 class="h2">1) Idioma y set de caracteres</h2>
-
-          <label class="label" for="languageSelect">Idioma</label>
-          <select id="languageSelect" class="select" aria-label="Seleccionar idioma">
-            <option value="es" selected>Español</option>
-            <option value="en">Inglés</option>
-            <option value="de">Alemán</option>
-            <option value="fr">Francés</option>
-            <option value="pt">Portugués</option>
-            <option value="it">Italiano</option>
-          </select>
-
-          <div class="divider"></div>
-
-          <div class="row">
-            <div class="field">
-              <label class="label" for="maxPages">Máximo de páginas</label>
-              <input id="maxPages" class="input" type="number" min="1" max="10" value="10" aria-label="Máximo de páginas (1 a 10)" />
-            </div>
-            <div class="field">
-              <label class="label" for="fontSize">Tamaño de letra</label>
-              <input id="fontSize" class="input" type="number" min="10" max="40" value="18" aria-label="Tamaño de letra (puntos)" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label class="label" for="lineHeight">Interlineado</label>
-              <input id="lineHeight" class="input" type="number" min="1.1" max="2.2" step="0.05" value="1.55" aria-label="Interlineado" />
-            </div>
-            <div class="field">
-              <label class="label" for="pageMargin">Márgenes (in)</label>
-              <input id="pageMargin" class="input" type="number" min="0.3" max="1.5" step="0.05" value="0.85" aria-label="Margen de página en pulgadas" />
-            </div>
-          </div>
-
-          <div class="hint">
-            Recomendación: escribe pangramas + mayúsculas/minúsculas + números/símbolos (según tu pipeline). A mayor cobertura, mejor GSUB/GPOS.
+    <div class="gm-grid">
+      <!-- Left: Build -->
+      <section class="gm-card" aria-label="Font build panel">
+        <div class="gm-card-h">
+          <div>
+            <h2>1) Handwriting samples → Font build</h2>
+            <p class="sub">No keys in frontend. Backend handles security and font engineering.</p>
           </div>
         </div>
-
-        <div class="card">
-          <h2 class="h2">2) Cargar muestras</h2>
-
-          <div
-            id="dropzone"
-            class="dropzone"
-            role="button"
-            tabindex="0"
-            aria-label="Zona para arrastrar y soltar imágenes de caligrafía"
-            aria-describedby="dropzoneHelp"
-          >
-            <div class="dropzone__icon" aria-hidden="true"></div>
-            <div class="dropzone__title">Arrastra imágenes aquí o haz clic para seleccionar</div>
-            <div class="dropzone__meta" id="dropzoneHelp">PNG/JPG/WebP — máx. 6 imágenes — 5MB por imagen</div>
+        <div class="gm-card-b">
+          <div class="gm-row">
+            <div id="dropZone" class="gm-drop" role="button" aria-label="Drop handwriting samples here or press Enter to browse" aria-describedby="samplesHint">
+              <div>
+                <strong>Drop images here</strong><br/>
+                or click / press Enter to select files
+              </div>
+            </div>
             <input id="fileInput" type="file" accept="image/*" multiple class="sr-only" aria-hidden="true" />
           </div>
 
-          <div class="filelist" id="fileList" aria-label="Lista de archivos cargados"></div>
+          <div class="gm-help" id="samplesHint" style="margin-top:10px;">
+            Recommended: add at least 2 samples.
+          </div>
 
-          <div class="divider"></div>
+          <div id="samplesList" class="gm-samples" aria-label="Selected samples"></div>
 
-          <h3 class="h3">Backend (tu servidor)</h3>
-          <p class="muted">
-            El frontend llamará endpoints configurables en <code>src/config.js</code>.
-            Si tu backend ya existe, solo ajusta las rutas allí.
-          </p>
+          <hr style="border:none;border-top:1px solid var(--border); margin:14px 0;">
 
-          <div class="row">
-            <div class="field" style="flex:1;">
-              <label class="label" for="apiKeyInput">API Key Gemini (opcional, vacío por defecto)</label>
-              <input id="apiKeyInput" class="input" type="password" placeholder="(vacío)" autocomplete="off" aria-label="API Key de Gemini (opcional)" />
-              <div class="hint">Se envía solo si la escribes. No se guarda localmente.</div>
+          <div class="gm-row">
+            <div style="flex:1; min-width:220px;">
+              <div class="gm-help">Font family name (preview):</div>
+              <input id="fontName" class="gm-input" value="GlyphMasterHand" aria-label="Font family name" />
+            </div>
+            <div style="flex:1; min-width:260px;">
+              <div class="gm-help">Build options (JSON) sent to backend:</div>
+              <input id="buildOptions" class="gm-input" value='{"format":"woff2"}' aria-label="Build options JSON" />
             </div>
           </div>
 
-          <div class="row">
-            <button id="btnGenerate" class="btn btn--primary" type="button" disabled aria-label="Generar fuente con el backend">
-              Generar fuente
-            </button>
-            <button id="btnLoadLocalFont" class="btn btn--ghost" type="button" aria-label="Cargar fuente local (WOFF2/OTF/TTF)">
-              Cargar fuente local
-            </button>
-            <input id="localFontInput" type="file" class="sr-only" accept=".woff2,.woff,.otf,.ttf" aria-hidden="true" />
+          <div class="gm-row gm-actions" style="margin-top:12px;">
+            <button id="buildBtn" class="gm-btn gm-btn-primary" type="button" aria-label="Build font">Build font</button>
+            <button id="downloadFontBtn" class="gm-btn gm-btn-success" type="button" aria-label="Download last built font" disabled>Download font</button>
           </div>
 
-          <div class="status" id="status" role="status" aria-live="polite" aria-atomic="true"></div>
-
-          <div class="progress" aria-label="Progreso de generación">
-            <div class="progress__bar" id="progressBar" style="width:0%"></div>
-          </div>
-          <div class="muted small" id="progressText">Listo.</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="h2">3) Controles OpenType (frontend)</h2>
-        <p class="muted">
-          Estos toggles activan features (si tu fuente las incluye). GSUB/GPOS reales deben venir del backend.
-        </p>
-
-        <div class="features" role="group" aria-label="Controles OpenType">
-          <label class="check">
-            <input id="featLiga" type="checkbox" checked />
-            <span>liga (Ligaduras estándar)</span>
-          </label>
-          <label class="check">
-            <input id="featCalt" type="checkbox" checked />
-            <span>calt (Alternativas contextuales)</span>
-          </label>
-          <label class="check">
-            <input id="featKern" type="checkbox" checked />
-            <span>kern (Kerning)</span>
-          </label>
-          <label class="check">
-            <input id="featDlig" type="checkbox" />
-            <span>dlig (Ligaduras discrecionales)</span>
-          </label>
-          <label class="check">
-            <input id="featHlig" type="checkbox" />
-            <span>hlig (Ligaduras históricas)</span>
-          </label>
-          <label class="check">
-            <input id="featSalt" type="checkbox" />
-            <span>salt (Alternativas estilísticas)</span>
-          </label>
-
-          <div class="field" style="min-width:220px;">
-            <label class="label" for="featSS">Stylistic set (ss01..ss20)</label>
-            <select id="featSS" class="select" aria-label="Stylistic set">
-              <option value="">(ninguno)</option>
-              <option value="ss01">ss01</option><option value="ss02">ss02</option><option value="ss03">ss03</option><option value="ss04">ss04</option><option value="ss05">ss05</option>
-              <option value="ss06">ss06</option><option value="ss07">ss07</option><option value="ss08">ss08</option><option value="ss09">ss09</option><option value="ss10">ss10</option>
-              <option value="ss11">ss11</option><option value="ss12">ss12</option><option value="ss13">ss13</option><option value="ss14">ss14</option><option value="ss15">ss15</option>
-              <option value="ss16">ss16</option><option value="ss17">ss17</option><option value="ss18">ss18</option><option value="ss19">ss19</option><option value="ss20">ss20</option>
-            </select>
+          <div class="gm-status" aria-live="polite" aria-atomic="true">
+            <span class="muted">Status:</span>
+            <span id="statusLive">Ready.</span>
           </div>
         </div>
+      </section>
 
-        <div class="divider"></div>
-
-        <div class="row">
-          <button id="btnExportHTML" class="btn btn--ghost" type="button" aria-label="Exportar HTML del documento">
-            Exportar HTML
-          </button>
-          <button id="btnClearText" class="btn btn--danger" type="button" aria-label="Limpiar texto">
-            Limpiar texto
-          </button>
-          <div class="muted small" id="pageInfo" aria-live="polite"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="workspace" aria-label="Editor y composición en páginas">
-      <div class="workspace__split">
-        <div class="editor card" aria-label="Editor de texto">
-          <h2 class="h2">Editor</h2>
-          <p class="muted">
-            Escribe aquí. La previsualización se compone en páginas Carta. Se limita a 10 páginas (configurable hasta 10).
-          </p>
-
-          <label class="label" for="inputText">Texto</label>
-          <textarea
-            id="inputText"
-            class="textarea"
-            placeholder="Escribe aquí y se compondrá en páginas tamaño carta con tu fuente..."
-            aria-label="Área de texto para escribir"
-            rows="10"
-          ></textarea>
-
-          <div class="hint">
-            Rendimiento: la paginación usa debouncing con requestAnimationFrame; textos largos siguen siendo fluidos.
+      <!-- Right: Composer -->
+      <section class="gm-card" aria-label="US Letter compositor">
+        <div class="gm-card-h">
+          <div>
+            <h2>2) Type → Compose into US Letter pages</h2>
+            <p class="sub">Debounced rendering for long text. Print-ready layout.</p>
           </div>
         </div>
-
-        <div class="preview card" aria-label="Vista previa de páginas tamaño carta">
-          <h2 class="h2">Vista previa (US Letter)</h2>
-          <div class="preview__toolbar">
-            <div class="pill">
-              Fuente activa: <span class="pill__value" id="activeFontName">Fallback</span>
-            </div>
-            <div class="pill">
-              Features: <span class="pill__value" id="activeFeatures">liga,calt,kern</span>
-            </div>
+        <div class="gm-card-b">
+          <div class="gm-row">
+            <textarea id="textInput" class="gm-textarea" aria-label="Text to compose"
+              placeholder="Type here. When your font is loaded, the pages will render in your handwriting style."></textarea>
           </div>
 
-          <div id="pages" class="pages" aria-label="Páginas renderizadas"></div>
+          <div id="overflowNote" class="gm-overflow" role="status" aria-live="polite" hidden></div>
 
-          <div id="a11yAlert" class="sr-only" role="alert" aria-live="assertive"></div>
+          <div class="gm-row gm-actions" style="margin-top:10px;">
+            <button id="printBtn" class="gm-btn" type="button" aria-label="Print pages">Print</button>
+            <button id="clearBtn" class="gm-btn gm-btn-danger" type="button" aria-label="Clear text">Clear</button>
+          </div>
+
+          <div class="gm-pages-wrap" style="margin-top:14px;">
+            <div id="pagesContainer" aria-label="Rendered pages"></div>
+          </div>
+
+          <div class="gm-help" style="margin-top:10px;">
+            Note: Max output is <strong>10 pages</strong>. If content exceeds that, it will be truncated with an ellipsis.
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <footer class="footer" role="contentinfo">
-    <div class="footer__inner">
-      <div class="muted">
-        Nota: Este frontend asume que tu backend genera la fuente con GSUB/GPOS. Aquí solo activamos features y componemos páginas.
-      </div>
-      <div class="muted small">
-        InkReplica Studio — demo pública de prestigio. Máx. 10 páginas.
-      </div>
-    </div>
-  </footer>
-
-  <script src="./src/config.js"></script>
-  <script src="./src/api.js"></script>
-  <script src="./src/composer.js"></script>
-  <script src="./src/app.js"></script>
+  <script type="module" src="./src/app.js"></script>
 </body>
 </html>

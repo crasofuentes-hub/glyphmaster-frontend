@@ -1,0 +1,29 @@
+﻿# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets / Env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Node / builds (por si luego agregas tooling)
+node_modules/
+dist/
+build/
+out/
+.next/
+.cache/
+.vite/
+
+# Coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/

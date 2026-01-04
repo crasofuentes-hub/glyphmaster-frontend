@@ -1,43 +1,47 @@
-﻿# GlyphMaster Frontend — Architecture
+﻿# Architecture (Frontend)
 
-## Overview
-This repository contains a production-grade frontend for **GlyphMaster**, a handwriting-to-font workflow that:
-- uploads handwriting samples (pangram sheets),
-- requests a font build to the backend (OTF/TTF/WOFF2),
-- loads the resulting font in the browser,
-- renders typed text into a **US Letter** document compositor with a maximum of **10 pages**.
+This repository contains a **static, modular Vanilla JS** frontend for:
+1) collecting handwriting samples,
+2) invoking a backend font-build pipeline, and
+3) rendering typed text into **US Letter pages** (hard cap: **10 pages**), print-ready.
 
-The backend is responsible for the complex font engineering:
-- contextual alternates (multiple glyph variants),
-- OpenType GSUB/GPOS rules,
-- ligatures,
-- kerning and spacing refinement.
+The backend is the system of record for:
+- OpenType engineering (GSUB/GPOS: calt/liga/rlig/kern, contextual alternates, ligatures, kerning),
+- font compilation/optimization (WOFF2 preferred for web),
+- secure model/provider integration and any sensitive keys.
 
-The frontend focuses on:
-- professional UX,
-- accessibility (ARIA),
-- deterministic pagination (US Letter),
-- font loading and preview,
-- safe API usage without embedding secrets.
+## High-Level Flow
+1. User selects language, uploads handwriting images, types text.
+2. Frontend sends images/options to the backend.
+3. Backend returns a font payload (WOFF2) + metadata.
+4. Frontend registers it via the FontFace API.
+5. Composer paginates into US Letter pages (max 10) and enables OT features via CSS.
 
-## Folder Structure
-- **index.html**: app shell, layout, ARIA landmarks
-- **assets/styles.css**: UI styling and print rules
-- **src/config.js**: environment/config defaults
-- **src/api.js**: backend API client (Gemini key kept empty in UI; backend handles secrets)
-- **src/composer.js**: US Letter compositor + pagination (max 10 pages)
-- **src/app.js**: application orchestration and UI state
+## Modules (src/)
+- config.js: env + defaults (API base URL, max pages, flags).
+- api.js: backend client (timeouts, abort, error shaping).
+- composer.js: US Letter layout + deterministic pagination (max 10).
+- app.js: UI wiring + state machine + debounced composition + ARIA status.
 
-## Rendering Model
-1) User uploads images (handwriting samples).
-2) Frontend sends files to backend to build a font package.
-3) Backend returns a font binary (preferably WOFF2 for web) + metadata.
-4) Frontend loads the font using FontFace API.
-5) User types; compositor lays out text into US Letter pages and renders preview.
-6) Print uses CSS @media print + page sizing.
+## Composition Model
+- Paper: US Letter (8.5 x 11 in)
+- Print CSS: @page { size: letter; margin: ... }
+- Determinism: fixed font-size/line-height/margins; stop at 10 pages.
 
-## Accessibility
-- ARIA live regions for status updates.
-- Keyboard-focusable controls and meaningful labels.
-- Drop zone supports keyboard activation.
-- Contrast is validated for secondary text where feasible.
+## Typographic Features (Frontend Scope)
+The frontend never generates GSUB/GPOS. It only toggles features:
+- font-kerning: normal;
+- font-feature-settings: "liga" 1, "calt" 1, "kern" 1, "rlig" 1;
+
+Actual behavior depends on backend-built OpenType tables.
+
+## Error Handling
+- Fail-fast on invalid responses.
+- Maintain readable fallback font stack.
+- Use ARIA live region for status + errors.
+
+## Future Enhancements
+- IndexedDB caching by buildId/options.
+- Worker-based composition for long documents.
+- Server-side PDF export for pixel-perfect output.
+- Playwright QA for print layout stability.

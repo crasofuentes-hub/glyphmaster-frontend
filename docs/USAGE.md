@@ -1,30 +1,25 @@
 ﻿# Usage
 
 ## Local Run
-This frontend is static. You can run it by opening index.html, or via a tiny local server:
-
-PowerShell (optional):
+Static frontend. Recommended local server:
 python -m http.server 8080
 
-Then open:
-http://localhost:8080
+Open: http://localhost:8080
 
 ## Workflow
-1) Select language and follow pangram instructions.
-2) Upload 2–6 handwriting images (recommended: lowercase/uppercase).
-3) Start analysis/build (backend).
-4) Load generated font.
-5) Type into the editor.
-6) Preview pagination on US Letter (max 10 pages).
-7) Print to PDF using the browser print dialog.
+1. Select language.
+2. Upload 2–6 handwriting images (lowercase + uppercase recommended).
+3. Click build/generate font.
+4. When loaded, type text.
+5. Composer paginates to US Letter pages (max 10).
+6. Print via browser dialog.
 
-## Printing
-Use the browser print dialog and select:
-- Paper: Letter
-- Margins: default or none (depending on desired look)
-- Background graphics: enabled (if your design uses them)
+## Limits
+- Max pages: 10
+- Max images: 6 (typical)
+- Long text: rendering should be debounced to avoid per-keystroke full pagination.
 
 ## Troubleshooting
-- If font does not load: confirm backend returns valid WOFF2/TTF and correct MIME.
-- If pages exceed 10: compositor must clamp to maxPages.
-- If ligatures/kerning not visible: ensure GSUB/GPOS features are present and enabled in the font.
+- Font not applied: verify backend returned valid WOFF2 base64 + correct MIME.
+- Pagination inconsistent: fix font-size/line-height and use local server (not file://).
+- Upload fails: check size/type + backend CORS.

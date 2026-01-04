@@ -1,45 +1,57 @@
-﻿# GlyphMaster Backend API Contract (Frontend Expectations)
+﻿# API Contract (Frontend <-> Backend)
 
-This document defines the minimal contract the frontend expects.
+The frontend expects a backend that:
+- accepts handwriting images,
+- returns a compiled web font (WOFF2 preferred),
+- supports OpenType features (GSUB/GPOS) in the generated font.
 
 ## Base URL
-Configured in src/config.js (e.g. http://localhost:8080 or your deployed endpoint).
+Configured in src/config.js (e.g., API_BASE_URL).
 
 ## Endpoints
 
 ### POST /api/font/build
-Uploads handwriting images and requests a font build.
+Build a font from handwriting samples.
 
-**Request (multipart/form-data)**
-- language (string): e.g. es
-- options (string JSON): build options
-- iles[] (file): handwriting sample images
+Request:
+- Content-Type: multipart/form-data
+- Fields:
+  - language (string): e.g., es, en
+  - options (stringified JSON): backend-defined feature/build toggles
+  - files[] (file[]): handwriting sample images
 
-**Options JSON (example)**
+Response (recommended):
 {
-  "maxPages": 10,
-  "enableContextualAlternates": true,
-  "enableLigatures": true,
-  "enableKerning": true,
-  "target": "woff2"
+  "fontName": "MyHandwriting",
+  "fontMime": "font/woff2",
+  "fontBase64": "<base64-woff2>",
+  "meta": {
+    "features": ["calt","liga","kern","rlig"],
+    "glyphCoverage": 0.92,
+    "buildId": "abc123",
+    "warnings": []
+  }
 }
 
-**Response (200)**
-- ontName (string)
-- ontMime (string) e.g. ont/woff2
-- ontBase64 (string) base64 encoded font binary
-- meta (object)
-  - glyphCoverage (number 0..1)
-  - eatures (array) e.g. ["calt","liga","kern","rlig"]
-  - uildId (string)
+Notes:
+- fontBase64 should be raw base64 (no data URL prefix).
+- frontend typically converts to: data:font/woff2;base64,<...>
 
-### GET /api/font/build/{buildId}
-Fetch build status / cached font package.
+### GET /api/font/build/:buildId (optional)
+Fetch an existing build for caching/sharing.
 
-### POST /api/analyze
-(Optional) Forensic metrics only; does not generate fonts.
+### GET /api/health (optional)
+Returns: { "status": "ok" }
 
-## Notes on Security
-- The frontend never ships a Gemini API key.
-- Gemini/Vertex/OpenAI keys belong in the backend only.
-- If the frontend provides an input for a key, it must remain optional and empty by default.
+## Error Format (recommended)
+{
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "At least 2 images are required.",
+    "details": {}
+  }
+}
+
+## Security
+- No provider/model keys in the browser.
+- Backend enforces auth, rate limits, and retention policy.

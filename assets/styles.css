@@ -264,3 +264,14 @@ a{color:inherit}
   white-space:nowrap !important;
   border:0 !important;
 }
+
+/* Backend panel */
+.status { margin-top: .75rem; font-size: .95rem; }
+.status--ok { opacity: 1; }
+.status--warn { opacity: 1; }
+.status--muted { opacity: .8; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end; }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+.field { display: flex; flex-direction: column; gap: .35rem; }
+.label { font-weight: 600; }
+.hint, .muted { opacity: .8; }

@@ -286,3 +286,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     announce(`Downloaded: ${lastBuilt.font.filename}`);
   });
 });
+
+
+function initBackendPanel(state) {
+  const input = document.getElementById("apiBaseUrl");
+  const btnConnect = document.getElementById("btnConnect");
+  const btnDisconnect = document.getElementById("btnDisconnect");
+  const status = document.getElementById("backend-status");
+
+  if (!input || !btnConnect || !btnDisconnect || !status) return;
+
+  const cfg = getRuntimeConfig();
+  input.value = cfg.apiBaseUrl || "";
+
+  const setStatus = (msg, kind) => {
+    status.textContent = msg || "";
+    status.className = "status" + (kind ? (" status--" + kind) : "");
+  };
+
+  const apply = (url) => {
+    const v = setApiBaseUrl(url);
+    state.apiBaseUrl = v;
+    input.value = v;
+    if (v) setStatus("Conectado: " + v, "ok");
+    else setStatus("Modo demo: backend no configurado.", "muted");
+  };
+
+  btnConnect.addEventListener("click", () => {
+    const v = (input.value || "").trim();
+    if (!v) return apply("");
+    try {
+      const u = new URL(v);
+      apply(u.origin); // normaliza a origin (evita rutas inesperadas)
+    } catch {
+      setStatus("URL inválida. Ejemplo: https://api.tudominio.com", "warn");
+    }
+  });
+
+  btnDisconnect.addEventListener("click", () => apply(""));
+
+  // Estado inicial
+  if (cfg.apiBaseUrl) setStatus("Conectado: " + cfg.apiBaseUrl, "ok");
+  else setStatus("Modo demo: backend no configurado.", "muted");
+}
+

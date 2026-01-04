@@ -1,24 +1,32 @@
-﻿# InkReplica Studio (GlyphMaster Frontend)
+﻿# GlyphMaster Frontend
 
-Professional frontend for:
-- Uploading handwriting samples (images)
-- Calling a backend that generates a personal font with GSUB/GPOS (OpenType)
-- Loading the generated font in-browser (FontFace API)
-- Composing typed text into US Letter pages (max 10 pages)
-- Enabling OpenType features in frontend (liga/calt/kern + optional dlig/hlig/salt + ss01..ss20)
+Professional frontend for a handwriting-to-font workflow:
+- Upload handwriting samples (pangram sheets)
+- Request font build from backend (GSUB/GPOS, contextual alternates, ligatures, kerning)
+- Load the generated font in-browser
+- Compose typed text into **US Letter** pages (max **10**) for printing/export
 
-## Backend contract (edit in src/config.js)
-Expected endpoints:
-- POST /api/font/jobs
-- GET  /api/font/jobs/{jobId}
-- GET  /api/font/jobs/{jobId}/font
+## Live Demo
+(Enable GitHub Pages: Settings → Pages → main / root)
+Demo URL: https://crasofuentes-hub.github.io/glyphmaster-frontend/
 
-If your backend uses different routes, update them in src/config.js.
+## Project Structure
+- index.html
+- assets/styles.css
+- src/config.js
+- src/api.js
+- src/app.js
+- src/composer.js
 
-## Run
-Open index.html in a browser, or serve locally:
-- python -m http.server 8080
-- then open http://localhost:8080/
+## Docs
+- docs/ARCHITECTURE.md
+- docs/API.md
+- docs/USAGE.md
 
-## Notes
-This repo intentionally keeps the Gemini API key empty by default and does not persist it.
+## Run Locally
+Open index.html, or:
+
+python -m http.server 8080
+
+Then open:
+http://localhost:8080

@@ -1,4 +1,7 @@
-﻿# GlyphMaster Frontend
+﻿[![Version](https://img.shields.io/badge/version-v0.1.0-blue)](../../releases/tag/v0.1.0)
+[![Status](https://img.shields.io/badge/status-demo%20ready-success)](#)
+[![Pages](https://img.shields.io/badge/github%20pages-ready-informational)](https://crasofuentes-hub.github.io/glyphmaster-frontend/)
+# GlyphMaster Frontend
 
 Professional web frontend for generating a personalized font from handwriting samples and composing typed text into **US Letter** pages (**max 10 pages**).
 
@@ -81,3 +84,4 @@ Use the browser print dialog and select:
 
 ## License
 Portfolio / showcase project.
+
